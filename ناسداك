@@ -109,3 +109,4 @@ if __name__ == "__main__":
     # عرض آخر 5 أيام من الإشارات
     print("\nآخر الإشارات المولدة:")
     print(results[['Close', 'Lower', 'Upper', 'Signal']].tail())
+pip install streamlit plotly yfinance pandas
