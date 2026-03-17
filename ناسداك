@@ -175,3 +175,14 @@ try:
 except Exception as e:
     st.info("يرجى إدخال رمز سهم صالح للبدء.")
 streamlit run app.py
+# استنساخ المستودع
+git clone https://github.com/dot-connor/OpenClaw.git
+
+# الدخول للمجلد
+cd OpenClaw
+
+# تثبيت المكتبات المطلوبة
+npm install
+
+# تشغيل المشروع في وضع التطوير
+npm run dev
