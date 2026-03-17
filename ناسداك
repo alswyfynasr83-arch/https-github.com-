@@ -1,1 +1,45 @@
 pip install yfinance pandas matplotlib
+import yfinance as yf
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def backtest_zscore_strategy(ticker, period='1y', window=20, entry_z=2, exit_z=0):
+    # 1. جلب البيانات (مثلاً سهم لوسيد أو مؤشر ناسداك)
+    data = yf.download(ticker, period=period)
+    df = data[['Close']].copy()
+
+    # 2. الحسابات الكمية
+    # حساب المتوسط المتحرك والانحراف المعياري
+    df['Moving_Average'] = df['Close'].rolling(window=window).mean()
+    df['Std_Dev'] = df['Close'].rolling(window=window).std()
+
+    # حساب الـ Z-Score: (السعر الحالي - المتوسط) / الانحراف المعياري
+    df['Z_Score'] = (df['Close'] - df['Moving_Average']) / df['Std_Dev']
+
+    # 3. منطق الإشارات (Signals)
+    # شراء إذا كان الـ Z-Score أقل من -2 (انحراف سلبي حاد)
+    # بيع (خروج) إذا عاد الـ Z-Score إلى 0 (المتوسط)
+    df['Signal'] = 0
+    df.loc[df['Z_Score'] < -entry_z, 'Signal'] = 1  # إشارة دخول
+    df.loc[df['Z_Score'] > exit_z, 'Signal'] = 0   # إشارة خروج (تصفية)
+
+    # تنظيف الإشارات لتحديد نقاط الدخول الفعلية
+    df['Position'] = df['Signal'].ffill().fillna(0)
+    
+    return df
+
+# تشغيل النموذج على مؤشر ناسداك (QQQ) كمثال
+ticker_symbol = "QQQ" 
+results = backtest_zscore_strategy(ticker_symbol)
+
+# عرض النتائج
+print(results.tail(10))
+
+# رسم بياني توضيحي
+plt.figure(figsize=(12,6))
+plt.plot(results['Z_Score'], label='Z-Score', color='blue')
+plt.axhline(y=-2, color='red', linestyle='--', label='Buy Threshold (-2)')
+plt.axhline(y=0, color='green', linestyle='--', label='Mean (0)')
+plt.title(f'Quantitative Z-Score for {ticker_symbol}')
+plt.legend()
+plt.show()
