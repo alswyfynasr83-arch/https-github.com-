@@ -43,3 +43,69 @@ plt.axhline(y=0, color='green', linestyle='--', label='Mean (0)')
 plt.title(f'Quantitative Z-Score for {ticker_symbol}')
 plt.legend()
 plt.show()
+import yfinance as yf
+import pandas as pd
+import numpy as np
+
+class QuantTrader:
+    def __init__(self, ticker, capital=10000):
+        self.ticker = ticker
+        self.capital = capital
+        self.data = None
+        self.signals = None
+
+    def fetch_data(self, period='2y', interval='1d'):
+        """جلب البيانات التاريخية من ناسداك"""
+        print(f"جاري جلب بيانات {self.ticker}...")
+        self.data = yf.download(self.ticker, period=period, interval=interval)
+        return self.data
+
+    def generate_signals(self, window=20, dev_factor=2):
+        """تطبيق استراتيجية Bollinger Bands الكمية"""
+        df = self.data.copy()
+        
+        # حساب المتوسط المتحرك والانحراف المعياري
+        df['MA'] = df['Close'].rolling(window=window).mean()
+        df['STD'] = df['Close'].rolling(window=window).std()
+        
+        # حساب النطاقات العلوية والسفلية (Bollinger Bands)
+        df['Upper'] = df['MA'] + (df['STD'] * dev_factor)
+        df['Lower'] = df['MA'] - (df['STD'] * dev_factor)
+        
+        # منطق التداول: شراء عند كسر النطاق السفلي، بيع عند كسر العلوي
+        df['Signal'] = 0
+        df.loc[df['Close'] < df['Lower'], 'Signal'] = 1  # شراء
+        df.loc[df['Close'] > df['Upper'], 'Signal'] = -1 # بيع
+        
+        self.signals = df
+        return df
+
+    def backtest(self):
+        """اختبار الاستراتيجية على البيانات التاريخية"""
+        df = self.signals.copy()
+        df['Returns'] = df['Close'].pct_change()
+        
+        # حساب أداء الاستراتيجية (بافتراض التنفيذ في اليوم التالي)
+        df['Strategy_Returns'] = df['Signal'].shift(1) * df['Returns']
+        
+        # حساب التراكمي للأرباح
+        df['Cumulative_Market'] = (1 + df['Returns']).cumprod()
+        df['Cumulative_Strategy'] = (1 + df['Strategy_Returns']).cumprod()
+        
+        final_return = (df['Cumulative_Strategy'].iloc[-1] - 1) * 100
+        print(f"--- نتيجة الاختبار لـ {self.ticker} ---")
+        print(f"العائد الإجمالي للاستراتيجية: {final_return:.2f}%")
+        return df
+
+# --- تشغيل النظام بالكامل ---
+if __name__ == "__main__":
+    # يمكنك تغيير الرمز إلى LCID أو QQQ (مؤشر ناسداك)
+    my_bot = QuantTrader(ticker="QQQ", capital=5000)
+    
+    my_bot.fetch_data()
+    my_bot.generate_signals()
+    results = my_bot.backtest()
+    
+    # عرض آخر 5 أيام من الإشارات
+    print("\nآخر الإشارات المولدة:")
+    print(results[['Close', 'Lower', 'Upper', 'Signal']].tail())
