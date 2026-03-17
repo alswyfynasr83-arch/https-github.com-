@@ -110,3 +110,67 @@ if __name__ == "__main__":
     print("\nآخر الإشارات المولدة:")
     print(results[['Close', 'Lower', 'Upper', 'Signal']].tail())
 pip install streamlit plotly yfinance pandas
+import streamlit as st
+import yfinance as yf
+import pandas as pd
+import plotly.graph_objects as go
+from datetime import datetime
+
+# إعدادات الصفحة
+st.set_page_config(page_title="Nasdaq Quant Monitor", layout="wide")
+
+st.title("📊 منصة التحليل الكمي لأسهم ناسداك")
+st.sidebar.header("إعدادات المراقبة")
+
+# مدخلات المستخدم
+ticker = st.sidebar.text_input("أدخل رمز السهم (مثلاً LCID, QQQ, AAPL):", value="QQQ").upper()
+start_date = st.sidebar.date_input("تاريخ البدء", datetime(2023, 1, 1))
+window = st.sidebar.slider("نافذة المتوسط المتحرك (Days):", 10, 50, 20)
+dev_factor = st.sidebar.slider("معامل الانحراف المعياري:", 1.0, 3.0, 2.0)
+
+# جلب البيانات
+@st.cache_data
+def load_data(symbol, start):
+    data = yf.download(symbol, start=start)
+    return data
+
+try:
+    df = load_data(ticker, start_date)
+
+    if not df.empty:
+        # الحسابات الكمية (Bollinger Bands)
+        df['MA'] = df['Close'].rolling(window=window).mean()
+        df['STD'] = df['Close'].rolling(window=window).std()
+        df['Upper'] = df['MA'] + (df['STD'] * dev_factor)
+        df['Lower'] = df['MA'] - (df['STD'] * dev_factor)
+
+        # رسم البيانات التفاعلية باستخدام Plotly
+        fig = go.Figure()
+
+        # خط السعر
+        fig.add_trace(go.Scatter(x=df.index, y=df['Close'], name='السعر الحالي', line=dict(color='white', width=1.5)))
+        
+        # خطوط التحليل الكمي
+        fig.add_trace(go.Scatter(x=df.index, y=df['Upper'], name='النطاق العلوي (بيع)', line=dict(color='red', dash='dot')))
+        fig.add_trace(go.Scatter(x=df.index, y=df['Lower'], name='النطاق السفلي (شراء)', line=dict(color='green', dash='dot')))
+
+        # تنسيق الرسم البياني
+        fig.update_layout(title=f"تحليل حركة {ticker}", template="plotly_dark", xaxis_rangeslider_visible=False)
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+        # عرض ملخص البيانات
+        col1, col2, col3 = st.columns(3)
+        col1.metric("آخر سعر إغلاق", f"${df['Close'].iloc[-1]:.2f}")
+        col2.metric("أعلى سعر (فترة)", f"${df['High'].max():.2f}")
+        col3.metric("أدنى سعر (فترة)", f"${df['Low'].min():.2f}")
+
+        # جدول الإشارات الأخيرة
+        st.subheader("📋 آخر تحديثات البيانات")
+        st.dataframe(df[['Close', 'Upper', 'Lower']].tail(10))
+
+    else:
+        st.error("لم يتم العثور على بيانات لهذا الرمز. تأكد من كتابته بشكل صحيح.")
+
+except Exception as e:
+    st.info("يرجى إدخال رمز سهم صالح للبدء.")
