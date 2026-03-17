@@ -174,3 +174,4 @@ try:
 
 except Exception as e:
     st.info("يرجى إدخال رمز سهم صالح للبدء.")
+streamlit run app.py
