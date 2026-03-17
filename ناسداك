@@ -190,3 +190,20 @@ npm run dev
 ANTHROPIC_API_KEY=your_api_key_here
 OPENAI_API_KEY=your_api_key_here
 NEXT_PUBLIC_DEFAULT_MODEL=clape-3-5-sonnet-20240620
+# ملف .env.local
+ANTHROPIC_API_KEY=your_api_key_here
+OPENAI_API_KEY=your_api_key_here
+NEXT_PUBLIC_DEFAULT_MODEL=clape-3-5-sonnet-20240620
+// مثال لتعديل الـ System Prompt داخل كود الواجهة
+const systemInstruction = {
+  role: "system",
+  content: "أنت مساعد ذكاء اصطناعي متخصص في تحليل أسهم Nasdaq. وظيفتك تحليل بيانات Lucid و S&P 500 وتقديم تقارير فنية دقيقة."
+};
+git clone https://github.com/dot-connor/OpenClaw.git
+cd OpenClaw
+npm install
+# افتح الملف وأضف السطر التالي:
+ANTHROPIC_API_KEY=your_key_here
+# أو 
+OPENAI_API_KEY=your_key_here
+npm run dev
