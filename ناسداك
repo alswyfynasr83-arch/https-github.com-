@@ -186,3 +186,7 @@ npm install
 
 # تشغيل المشروع في وضع التطوير
 npm run dev
+# ملف .env.local
+ANTHROPIC_API_KEY=your_api_key_here
+OPENAI_API_KEY=your_api_key_here
+NEXT_PUBLIC_DEFAULT_MODEL=clape-3-5-sonnet-20240620
